@@ -20,7 +20,7 @@ class AncestorCalculator:
 
 @typeguard.typechecked
 @attrs.frozen
-class IssueWrapper:
+class IssueWrapperBase:
     # TODO: split class: generic basic issue logic + report sorting specific logic
     _issue: redminelib.resources.Issue
     _redmine: RedmineCachingWrapper
@@ -56,38 +56,10 @@ class IssueWrapper:
                 if possible_value['value'] == found_possible_value:
                     yield possible_value['label']
 
-    def _get_labels(self):
-        # id = 28 aa = self._issue.custom_fields.get(28)
-        return list(self.get_custom_field_values(config.custom_labels_field_name))
-
-    def _iot_labels_match(self, lala):
-        for iot_label in self._get_labels():
-            if iot_label in lala:
-                return True
-        return False
-
-    def is_shown_in_report(self):
-        return self._iot_labels_match(config.report_labels)
-
     def _just_below(self, stop):
         if self.get_wrapped_parent().get_id() == stop.get_id():
             return self
         return self.get_wrapped_parent()._just_below(stop)
-
-    def _is_chapter(self):
-        return self._iot_labels_match(config.chapter_labels)
-
-    def _get_ancestor_chapter_block_issue(self):
-        ascending = self
-        while True:
-            if ascending._is_chapter():
-                return ascending
-            ascending = ascending.get_wrapped_parent()
-            if ascending is None:
-                break
-
-    def _below_chapter_ancestor_issue(self):
-        return self._get_ancestor_chapter_block_issue() is not None
 
     def _contains(self, other):
         assert isinstance(other, IssueWrapper)
@@ -104,65 +76,16 @@ class IssueWrapper:
         custom_field = self.get_custom_field_by_name(config.sibling_order_field_name)
         if custom_field is None:
             return
-        value = custom_field.value
+        try:
+            value = custom_field.value
+        except redminelib.exceptions.ResourceAttrError:
+            return
         if value == "":
             return
         try:
             return int(value)
         except:
             raise
-
-    def _compare_lt_using_sibling(self, other) -> bool:
-        assert isinstance(other, IssueWrapper)
-        if self._contains(other):
-            return True
-        if other._contains(self):
-            return False
-        f_c_a = self.first_common_ancestor(other)
-        if False:
-            if f_c_a._below_chapter_ancestor_issue():
-                return False
-        sort_candidate_1 = self._just_below(f_c_a)
-        sort_candidate_2 = other._just_below(f_c_a)
-        order1 = sort_candidate_1.get_sibling_order()
-        order2 = sort_candidate_2.get_sibling_order()
-        if order1 is None and order2 is None:
-            return False
-        result = order1 < order2
-
-        return result
-
-    def same_chapter_block(self, other):
-        assert isinstance(other, IssueWrapper)
-        # ambos tendrían que ser hoja no?
-        if self._is_chapter():
-            return False
-        if other._is_chapter():
-            return False
-        i1block = self._get_ancestor_chapter_block_issue()
-        if i1block is None:
-            return False
-        i2block = other._get_ancestor_chapter_block_issue()
-        if i2block is None:
-            return False
-        try:
-            return i1block.match(i2block)
-        except:
-            raise
-
-    def _are_sorting_index_equal(self, other) -> bool:
-        same_block = self.same_chapter_block(other)
-        if same_block:
-            return True
-        return False
-
-    def __lt__(self, other):
-        assert isinstance(other, IssueWrapper)
-        if 2570 in (self.get_id(), other.get_id()):
-            logging.info("")
-        result_parent_sibling = self._compare_lt_using_sibling(other)
-
-        return result_parent_sibling
 
     def get_wrapped_parent(self):
         try:
@@ -211,3 +134,96 @@ class IssueWrapper:
                     except:
                         raise
         return custom_field_list
+
+
+@typeguard.typechecked
+class IssueWrapper(IssueWrapperBase):
+    def _get_labels(self):
+        # id = 28 aa = self._issue.custom_fields.get(28)
+        return list(self.get_custom_field_values(config.custom_labels_field_name))
+
+    def _iot_labels_match(self, lala):
+        for iot_label in self._get_labels():
+            if iot_label in lala:
+                return True
+        return False
+
+    def is_shown_in_report(self):
+        if config.report_labels is typing.Any:
+            return True
+        return self._iot_labels_match(config.report_labels)
+
+    def _is_chapter(self):
+        return self._iot_labels_match(config.chapter_labels)
+
+    def _get_ancestor_chapter_block_issue(self):
+        ascending = self
+        while True:
+            if ascending._is_chapter():
+                return ascending
+            ascending = ascending.get_wrapped_parent()
+            if ascending is None:
+                break
+
+    def _below_chapter_ancestor_issue(self):
+        return self._get_ancestor_chapter_block_issue() is not None
+
+    def _has_chapter_ancestor(self):
+        return self._below_chapter_ancestor_issue()
+
+    def _compare_lt_using_sibling(self, other) -> bool:
+        assert isinstance(other, IssueWrapper)
+        if 2310 in (self.get_id(), other.get_id()):
+            logging.warning("lo hace mal")
+        if self._contains(other):
+            return True
+        if other._contains(self):
+            return False
+        f_c_a = self.first_common_ancestor(other)
+        if False:
+            if f_c_a._below_chapter_ancestor_issue():
+                return False
+        sort_candidate_1 = self._just_below(f_c_a)
+        sort_candidate_2 = other._just_below(f_c_a)
+        order1 = sort_candidate_1.get_sibling_order()
+        order2 = sort_candidate_2.get_sibling_order()
+        if order1 is None and order2 is None:
+            if self._has_chapter_ancestor():
+                return False
+            else:
+                raise NotImplementedError
+        result = order1 < order2
+
+        return result
+
+    def same_chapter_block(self, other):
+        assert isinstance(other, IssueWrapper)
+        # ambos tendrían que ser hoja no?
+        if self._is_chapter():
+            return False
+        if other._is_chapter():
+            return False
+        i1block = self._get_ancestor_chapter_block_issue()
+        if i1block is None:
+            return False
+        i2block = other._get_ancestor_chapter_block_issue()
+        if i2block is None:
+            return False
+        try:
+            return i1block.match(i2block)
+        except:
+            raise
+
+    def _are_sorting_index_equal(self, other) -> bool:
+        same_block = self.same_chapter_block(other)
+        if same_block:
+            return True
+        return False
+
+    def __lt__(self, other):
+        assert isinstance(other, IssueWrapper)
+        if 2570 in (self.get_id(), other.get_id()):
+            logging.info("")
+        result_parent_sibling = self._compare_lt_using_sibling(other)
+
+        return result_parent_sibling
