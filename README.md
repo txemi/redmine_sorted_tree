@@ -1,5 +1,7 @@
 # redmine_sorted_tree
 
+Source: https://github.com/txemi/redmine_sorted_tree
+
 ## Motivation
 
 In redmine you cannot sort by secondary criteria when sorting by parent in order to view issues hierarchically:
