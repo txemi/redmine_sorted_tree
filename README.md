@@ -17,7 +17,7 @@ With this software you can achieve this.
 
 This script will use custom fields on issues to achieve its objective via redmine REST API.
 - Input: you can define some field as sibling order for children of same parent. I.e: sort issues like chapters of a book. You can also use "labels" coded in another custom field to filter issues that sould be sorted.
-- Output: this code will fill in a numeric custom field your define to achieve this and you should use this field in queries in orther to get the sorted tree. Issues with no sibling order below same ancestor could be sorted with aditional fields as they are assigned same index.
+- Output: this code will fill in a numeric custom field your define to achieve this and you should use this field in queries in order to get the sorted tree. Issues with no sibling order below same ancestor could be sorted with aditional fields as they are assigned same index.
 
 
 ## Quick Start
