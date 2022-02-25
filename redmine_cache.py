@@ -10,7 +10,7 @@ import assertpy
 @typeguard.typechecked
 @attrs.define
 class RedmineCachingWrapper:
-    """ Preparando que todas las consultas a redmine pasen por aquí para cachear y reducir las llamadas de red"""
+    """ Custom fields were queried too often and this was a problem, with this cache we have reduced execution time a lot."""
     _redmine: redminelib.Redmine
     _detect_caching_oportunity_counter_1: int = 0
     _cache_issue: dict = attrs.field(factory=dict)
