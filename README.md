@@ -26,5 +26,5 @@ This script will use custom fields on issues to achieve its objective via redmin
 2. Copy config.orig.py to config.py
 3. Edit config.py with your preferences
 4. Run main.py
-5. Make query on redmine sorting by index you selected in config.py first, and then by other fields you decide as secondary sorting criteria.
+5. Make query on redmine sorting by index you selected in config.py first to get hierarchical view sorted with sibling order, and then by other fields you decide as secondary sorting criteria (version, due date, priority...).
 
